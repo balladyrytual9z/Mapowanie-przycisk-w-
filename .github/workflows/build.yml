@@ -1,5 +1,4 @@
-
-name: Build Honda OBD Discovery APK
+name: Build Mapowanie Przycisków APK
 
 on:
   push:
@@ -235,11 +234,6 @@ jobs:
             \( -name build.gradle -o -name build.gradle.kts \) \
             -print
 
-          if [ ! -f dtcclear/build.gradle ] && \
-             [ ! -f dtcclear/build.gradle.kts ]; then
-            echo "::warning::Nie znaleziono modułu dtcclear."
-          fi
-
       - name: Run unit tests
         working-directory: ${{ steps.prepare.outputs.src }}
         shell: bash
@@ -260,10 +254,12 @@ jobs:
 
           TASKS=(":app:assembleDebug")
 
-          if [ -f dtcclear/build.gradle ] || \
-             [ -f dtcclear/build.gradle.kts ]; then
-            TASKS+=(":dtcclear:assembleDebug")
-          fi
+          # Dynamiczne wykrywanie dodatkowych modułów (np. service / helper)
+          for MODULE in dtcclear service core; do
+            if [ -f "$MODULE/build.gradle" ] || [ -f "$MODULE/build.gradle.kts" ]; then
+              TASKS+=(":$MODULE:assembleDebug")
+            fi
+          done
 
           "$GRADLE_CMD" "${TASKS[@]}" \
             --stacktrace \
@@ -282,9 +278,9 @@ jobs:
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Honda-Diplay-Przyciski-APKs
+          name: Mapowanie-Przyciskow-APKs
           path: |
             ${{ steps.prepare.outputs.src }}/app/build/outputs/apk/**/*.apk
-            ${{ steps.prepare.outputs.src }}/dtcclear/build/outputs/apk/**/*.apk
+            ${{ steps.prepare.outputs.src }}/*/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 30
